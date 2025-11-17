@@ -14,12 +14,30 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO.git'
+                git branch: 'master',
+                    url: 'https://github.com/adi-alidx321/TestApp.git'
             }
         }
 
-        stage('Build Fat Jar') {
+        stage('Compile') {
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Integration Test') {
+            steps {
+                sh 'mvn verify -DskipTests'
+            }
+        }
+
+        stage('Build Jar') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
@@ -27,27 +45,26 @@ pipeline {
 
         stage('Upload to Nexus') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'nexus-creds',
-                        usernameVariable: 'USER',
-                        passwordVariable: 'PASS')]) {
 
-                    sh """
-                        echo "Uploading ${JAR_NAME} to Nexus..."
+                withCredentials([usernamePassword(
+                        credentialsId: 'jenkin-nexus90',
+                        usernameVariable: 'NEXUS_USERNAME',
+                        passwordVariable: 'NEXUS_PASSWORD'
+                )]) {
 
-                        mvn deploy:deploy-file \
-                            -DgroupId=${GROUP_ID} \
-                            -DartifactId=${ARTIFACT_ID} \
-                            -Dversion=${VERSION} \
-                            -DgeneratePom=true \
-                            -Dpackaging=jar \
-                            -Dfile=target/${JAR_NAME} \
-                            -DrepositoryId=nexus \
-                            -Durl=${NEXUS_URL} \
-                            -DrepositoryId=nexus \
-                            -Durl=${NEXUS_URL} \
-                            -Dusername=$USER \
-                            -Dpassword=$PASS
-                    """
+                    sh "echo $NEXUS_USERNAME"
+                    sh "echo $NEXUS_PASSWORD"
+
+                    configFileProvider([configFile(fileId: 'global-maven-settings', variable: 'SETTINGS_XML')]) {
+
+                        sh """
+                            echo "Uploading artifact using mvn deploy..."
+
+                            mvn deploy \
+                                --settings $SETTINGS_XML \
+                                -DskipTests
+                        """
+                    }
                 }
             }
         }
