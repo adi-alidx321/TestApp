@@ -47,7 +47,7 @@ pipeline {
             steps {
 
                 withCredentials([usernamePassword(
-                        credentialsId: 'jenkin-nexus90',
+                        credentialsId: 'jenkin-nexus-cred',
                         usernameVariable: 'NEXUS_USERNAME',
                         passwordVariable: 'NEXUS_PASSWORD'
                 )]) {
@@ -55,10 +55,12 @@ pipeline {
                     sh "echo $NEXUS_USERNAME"
                     sh "echo $NEXUS_PASSWORD"
 
-                    configFileProvider([configFile(fileId: 'global-maven-settings', variable: 'SETTINGS_XML')]) {
+                    configFileProvider([configFile(fileId: 'maven-settings-prod', variable: 'SETTINGS_XML')]) {
 
                         sh """
                             echo "Uploading artifact using mvn deploy..."
+                            export NEXUS_USERNAME=${NEXUS_USERNAME}
+                            export NEXUS_PASSWORD=${NEXUS_PASSWORD}
 
                             mvn deploy \
                                 --settings $SETTINGS_XML \
