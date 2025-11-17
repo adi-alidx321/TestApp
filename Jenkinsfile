@@ -5,8 +5,9 @@ pipeline {
         // Change group/artifact/version according to your project
         GROUP_ID = "com.scex"
         ARTIFACT_ID = "TestApp"
-        VERSION = "1.0.0"
-        JAR_NAME = "${ARTIFACT_ID}-${VERSION}.jar"
+        BASE_VERSION = "1.0"
+        //JAR_NAME = "${ARTIFACT_ID}-${VERSION}.jar"
+        BUILD_VERSION = "${BASE_VERSION}.${BUILD_NUMBER}"
         NEXUS_URL = "http://localhost:8081/repository/maven-releases/"
     }
 
@@ -56,7 +57,7 @@ pipeline {
                     sh "echo $NEXUS_PASSWORD"
 
                     configFileProvider([configFile(fileId: 'maven-settings-prod', variable: 'SETTINGS_XML')]) {
-
+                        sh "mvn versions:set -DnewVersion=${BUILD_VERSION}"
                         sh """
                             echo "Uploading artifact using mvn deploy..."
                             export NEXUS_USERNAME=${NEXUS_USERNAME}
